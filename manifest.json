@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "findmuskist",
+  "description": "An extension that find hidden Muskists",
+  "version": "1.0",
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.twitter.com/*",
+        "*://*.x.com/*"
+      ],
+      "run_at": "document_start",
+      "js": [
+        "injecter.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "injected.js"
+      ],
+      "matches": [
+        "*://*.twitter.com/*",
+        "*://*.x.com/*"
+      ]
+    }
+  ]
+}
