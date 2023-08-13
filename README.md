@@ -12,4 +12,4 @@ Despite the addition of `Hide your blue checkmark` option, it's still possible t
 
 This extension does that and shows red checkmark for hidden Muskists - users who subscribe to X but hide the blue checkmark.
 
-![sample](https://raw.githubusercontent.com/haxibami/findmuskist/master/assets/sample.png)
+![sample](https://raw.githubusercontent.com/haxibami/findmuskist/main/asset/sample.png)
