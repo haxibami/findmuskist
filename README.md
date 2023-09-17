@@ -13,3 +13,18 @@ Despite the addition of `Hide your blue checkmark` option, it's still possible t
 This extension does that and shows red checkmark for hidden Muskists - users who subscribe to X but hide the blue checkmark.
 
 ![sample](https://raw.githubusercontent.com/haxibami/findmuskist/main/asset/sample.png)
+
+## Limitations
+
+Currently you can identify Muskists only on **profile page** (by `/UserByScreenName` GraphQL response), but not on timeline.
+
+## Development / Build
+
+```sh
+pnpm i
+pnpm run build
+```
+
+You can load the extension from `./dist` directory.
+
+Note: On Firefox, you may need to grant some permissions from `about:addons` page.

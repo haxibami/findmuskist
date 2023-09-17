@@ -6,8 +6,8 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.twitter.com/*",
-        "*://*.x.com/*"
+        "https://*.twitter.com/*",
+        "https://*.x.com/*"
       ],
       "run_at": "document_start",
       "js": [
@@ -21,8 +21,8 @@
         "injected.js"
       ],
       "matches": [
-        "*://*.twitter.com/*",
-        "*://*.x.com/*"
+        "https://*.twitter.com/*",
+        "https://*.x.com/*"
       ]
     }
   ]
