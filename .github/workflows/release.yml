@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  PNPM_HOME: ~/.local/share/pnpm
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - name: Setup pnpm with corepack
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@latest --activate
+          SHELL="$(which bash)" pnpm setup
+          echo "${{ env.PNPM_HOME }}" >> $GITHUB_PATH
+      - name: Get pnpm store path
+        id: pnpm-cache
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+      - name: Setup pnpm store & build artifact cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-
+      - name: Install node dependencies
+        run: pnpm i --frozen-lockfile
+      - name: Build with Plasmo
+        run: pnpm run build
+      - name: Sign for Firefox versions
+        run: pnpm web-ext sign --api-key=${{ secrets.AMO_JWT_ISSUER }} --api-secret=${{ secrets.AMO_JWT_SECRET }}
+      - uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: |
+            ./build/chrome-mv3-prod.zip
+            ./build/*.xpi

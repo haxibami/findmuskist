@@ -1,21 +1,75 @@
 {
   "name": "findmuskist",
+  "displayName": "Find Muskists",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "An extension that find hidden Muskists",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "targets": {
+    "default": {
+      "engines": {
+        "browsers": "last 2 versions, not dead, > 0.2%"
+      }
+    }
+  },
+  "packageManager": "pnpm@8.7.6",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "vite",
-    "build": "vite build"
+    "dev": "plasmo dev",
+    "build:chrome": "plasmo build --target=chrome-mv3",
+    "build:firefox": "plasmo build --target=firefox-mv3",
+    "build": "pnpm run build:chrome && pnpm run build:firefox",
+    "package:chrome": "plasmo package --target=chrome-mv3",
+    "package:firefox": "plasmo package --target=firefox-mv3",
+    "package": "pnpm run package:chrome && pnpm run package:firefox",
+    "lint:firefox": "web-ext lint",
+    "start:firefox": "web-ext run"
   },
   "keywords": [],
   "author": "haxibami <contact at haxibami dot net>",
   "license": "MIT",
   "dependencies": {
+    "plasmo": "^0.83.0",
+    "quicktype": "^23.0.75",
+    "ts-node": "^10.9.1",
     "xhook": "^1.6.2"
   },
+  "manifest": {
+    "permissions": [
+      "tabs"
+    ],
+    "host_permissions": [
+      "https://*.twitter.com/*",
+      "https://*.x.com/*"
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": [],
+        "matches": [
+          "https://*.twitter.com/*",
+          "https://*.x.com/*"
+        ]
+      }
+    ],
+    "browser_specific_settings": {
+      "gecko": {
+        "id": "$FIREFOX_EXT_ID"
+      }
+    }
+  },
+  "webExt": {
+    "sourceDir": "./build/firefox-mv3-prod",
+    "artifactsDir": "./build",
+    "build": {
+      "overwriteDest": true
+    }
+  },
   "devDependencies": {
-    "@crxjs/vite-plugin": "2.0.0-beta.18",
-    "vite": "^4.4.9"
+    "@types/chrome": "^0.0.246",
+    "@types/node": "^20.6.2",
+    "@types/xhook": "^1.5.0",
+    "typescript": "^5.2.2",
+    "web-ext": "^7.7.0"
   }
 }

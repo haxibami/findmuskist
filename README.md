@@ -12,7 +12,7 @@ Despite the addition of `Hide your blue checkmark` option, it's still possible t
 
 This extension does that and shows red checkmark for hidden Muskists - users who subscribe to X but hide the blue checkmark.
 
-![sample](https://raw.githubusercontent.com/haxibami/findmuskist/main/asset/sample.png)
+![sample](https://raw.githubusercontent.com/haxibami/findmuskist/main/assets/sample.png)
 
 ## Limitations
 
@@ -20,11 +20,13 @@ Currently you can identify Muskists only on **profile page** (by `/UserByScreenN
 
 ## Development / Build
 
+This extensin is built on [plasmo](https://www.plasmo.com/). See [plasmo's docs](https://docs.plasmo.com/) for more details.
+
 ```sh
 pnpm i
 pnpm run build
 ```
 
-You can load the extension from `./dist` directory.
+You can load the extension from `./build/chrome-mv3-prod` for Chrome and `./build/firefox-mv3-prod` for Firefox.
 
-Note: On Firefox, you may need to grant some permissions from `about:addons` page.
+Note: On Firefox, you may need to grant some permissions manually from `about:addons` page.
