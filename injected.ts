@@ -3,9 +3,6 @@
 import xhook from "xhook";
 import badgeCss from "data-text:~badge.css";
 
-// TODO: use some storage to store the list
-let budgeHidingUsers = [];
-
 xhook.after(function (request, response) {
   if (response.status !== 200) {
     return;
@@ -19,18 +16,26 @@ xhook.after(function (request, response) {
         res.data.user.result.is_blue_verified === false &&
         !res.data.user.result.legacy.verified_type
       ) {
-        budgeHidingUsers.push(res.data.user.result.rest_id);
+        if (!localStorage.getItem(res.data.user.result.rest_id)) {
+          localStorage.setItem(
+            res.data.user.result.rest_id,
+            "true",
+            //             JSON.stringify({
+            //               reason: vf_info.reason,
+            //               is_blue_verified: res.data.user.result.is_blue_verified,
+            //               verified_type: res.data.user.result.legacy.verified_type,
+            //             }),
+          );
+        }
         res.data.user.result.is_blue_verified = true;
-        res.data.user.result.legacy.verified = true;
-        res.data.user.result.verification_info.is_identity_verified = true;
-        res.data.user.result.has_hidden_subscriptions_on_profile = false;
+        // res.data.user.result.legacy.verified = true;
+        // res.data.user.result.verification_info.is_identity_verified = true;
+        // res.data.user.result.has_hidden_subscriptions_on_profile = false;
         res.data.user.result.verification_info.reason.description.text +=
           "。また、認証バッジを非表示にしています。";
-        response.text = JSON.stringify(res);
 
         let budgeEl = document.getElementById("muskist-budge");
         if (!budgeEl) {
-          console.log("added");
           let badgeStyle = document.createElement("style");
           badgeStyle.id = "muskist-budge";
           badgeStyle.textContent = badgeCss;
@@ -38,85 +43,146 @@ xhook.after(function (request, response) {
           target.appendChild(badgeStyle);
         }
       }
+      // TODO: remove from localStorage when `verification_info.reason` is no longer provided
+      response.text = JSON.stringify(res);
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
   } else if (
     request.url.includes("UserTweets") ||
-    request.url.includes("UserMedia")
+    request.url.includes("UserMedia") ||
+    request.url.includes("UserHighlights")
   ) {
+    const timelineName = request.url.includes("UserHighlights")
+      ? "timeline"
+      : "timeline_v2";
     try {
       let res = JSON.parse(response.text);
-      const targetIndex =
-        res.data.user.result.timeline_v2.timeline.instructions.findIndex(
-          (instruction) => instruction.type === "TimelineAddEntries",
-        );
-      res.data.user.result.timeline_v2.timeline.instructions[
-        targetIndex
+      // pinned tweet
+      const pinnedIndex = res.data.user.result[
+        timelineName
+      ].timeline.instructions.findIndex(
+        (instruction) => instruction.type === "TimelinePinEntry",
+      );
+      if (pinnedIndex !== -1) {
+        const entry =
+          res.data.user.result[timelineName].timeline.instructions[pinnedIndex]
+            .entry;
+        if (
+          entry.entryId.startsWith("tweet-") ||
+          entry.entryId.startsWith("promoted-tweet-")
+        ) {
+          if (
+            localStorage.getItem(
+              entry.content.itemContent.tweet_results.result.core.user_results
+                .result.rest_id,
+            )
+          ) {
+            entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
+              true;
+            // entry.content.tweet_results.result.core.user_results.result.legacy.verified = true;
+          }
+        }
+      }
+      // timeline tweets
+      const entriesIndex = res.data.user.result[
+        timelineName
+      ].timeline.instructions.findIndex(
+        (instruction) => instruction.type === "TimelineAddEntries",
+      );
+      res.data.user.result[timelineName].timeline.instructions[
+        entriesIndex
       ].entries.forEach((entry) => {
-        switch (true) {
-          case entry.entryId.startsWith("tweet-"):
+        if (
+          (entry.entryId.startsWith("tweet-") ||
+            entry.entryId.startsWith("promoted-tweet-")) &&
+          Object.keys(entry.content.itemContent.tweet_results).length !== 0
+        ) {
+          if (
+            entry.content.itemContent.tweet_results.result.__typename ===
+            "Tweet"
+          ) {
+            // normal tweet
+            // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
             if (
-              entry.content.itemContent.tweet_results.result.__typename ===
-              "Tweet"
+              localStorage.getItem(
+                entry.content.itemContent.tweet_results.result.core.user_results
+                  .result.rest_id,
+              )
             ) {
-              if (
-                budgeHidingUsers.includes(
-                  entry.content.itemContent.tweet_results.result.core
-                    .user_results.result.rest_id,
-                )
-              ) {
-                entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
-              }
-            } else if (
-              entry.content.itemContent.tweet_results.result.__typename ===
-              "TweetWithVisibilityResults"
-            ) {
-              if (
-                budgeHidingUsers.includes(
-                  entry.content.itemContent.tweet_results.result.tweet.core
-                    .user_results.result.rest_id,
-                )
-              ) {
-                entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
-              }
+              entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
+                true;
+              // entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
+              //   true;
             }
-            break;
-          case entry.entryId.startsWith("profile-conversation-"):
-            entry.content.items.forEach((item) => {
+          } else if (
+            entry.content.itemContent.tweet_results.result.__typename ===
+            "TweetWithVisibilityResults"
+          ) {
+            // retweet (?)
+            // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified
+            if (
+              localStorage.getItem(
+                entry.content.itemContent.tweet_results.result.tweet.core
+                  .user_results.result.rest_id,
+              )
+            ) {
+              entry.content.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified =
+                true;
+              // entry.content.itemContent.tweet_results.result.tweet.core.user_results.result.legacy.verified =
+              //   true;
+            }
+          }
+        } else if (entry.entryId.startsWith("profile-conversation-")) {
+          // conversation
+          // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
+          entry.content.items.forEach((item) => {
+            if (
+              item.item.itemContent.tweet_results.result.__typename === "Tweet"
+            ) {
               if (
-                budgeHidingUsers.includes(
+                localStorage.getItem(
                   item.item.itemContent.tweet_results.result.core.user_results
                     .result.rest_id,
                 )
               ) {
                 item.item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
                   true;
-                item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
+                // item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
+                //   true;
               }
-            });
-            break;
-          case entry.entryId.startsWith("who-to-follow-"):
-            entry.content.items.forEach((item) => {
+            } else if (
+              item.item.itemContent.tweet_results.result.__typename ===
+              "TweetWithVisibilityResults"
+            ) {
+              // retweet (?)
+              // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified
               if (
-                budgeHidingUsers.includes(
-                  item.item.itemContent.user_results.result.rest_id,
+                localStorage.getItem(
+                  item.item.itemContent.tweet_results.result.tweet.core
+                    .user_results.result.rest_id,
                 )
               ) {
-                item.item.itemContent.user_results.result.is_blue_verified =
+                item.item.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified =
                   true;
-                item.item.itemContent.user_results.result.legacy.verified =
-                  true;
+                // item.item.itemContent.tweet_results.result.tweet.core.user_results.result.legacy.verified =
+                //   true;
               }
-            });
-            break;
+            }
+          });
+        } else if (entry.entryId.startsWith("who-to-follow-")) {
+          // who to follow
+          // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.user_results.result.is_blue_verified
+          entry.content.items.forEach((item) => {
+            if (
+              localStorage.getItem(
+                item.item.itemContent.user_results.result.rest_id,
+              )
+            ) {
+              item.item.itemContent.user_results.result.is_blue_verified = true;
+              // item.item.itemContent.user_results.result.legacy.verified = true;
+            }
+          });
         }
       });
       response.text = JSON.stringify(res);
@@ -126,63 +192,52 @@ xhook.after(function (request, response) {
   } else if (request.url.includes("TweetDetail")) {
     try {
       let res = JSON.parse(response.text);
-      const targetIndex =
+      const entriesIndex =
         res.data.threaded_conversation_with_injections_v2.instructions.findIndex(
           (instruction) => instruction.type === "TimelineAddEntries",
         );
       res.data.threaded_conversation_with_injections_v2.instructions[
-        targetIndex
+        entriesIndex
       ].entries.forEach((entry) => {
-        switch (true) {
-          case entry.entryId.startsWith("tweet-"):
+        if (entry.entryId.startsWith("tweet-")) {
+          // normal tweet
+          // target: res.data.threaded_conversation_with_injections_v2.instructions[n].entries[n].content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
+          if (
+            entry.content.itemContent.tweet_results.result.__typename ===
+            "Tweet"
+          ) {
             if (
-              entry.content.itemContent.tweet_results.result.__typename ===
-              "Tweet"
+              localStorage.getItem(
+                entry.content.itemContent.tweet_results.result.core.user_results
+                  .result.rest_id,
+              )
             ) {
-              if (
-                budgeHidingUsers.includes(
-                  entry.content.itemContent.tweet_results.result.core
-                    .user_results.result.rest_id,
-                )
-              ) {
-                entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
-              }
+              entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
+                true;
+              // entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
+              //   true;
             }
-            break;
-          case entry.entryId.startsWith("conversationthread-"):
-            entry.content.items.forEach((item) => {
-              if (
-                budgeHidingUsers.includes(
-                  item.item.itemContent.tweet_results.result.core.user_results
-                    .result.rest_id,
-                )
-              ) {
-                item.item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
-              }
-            });
-            break;
-
-          case entry.entryId.startsWith("tweetdetailrelatedtweets-"):
-            entry.content.items.forEach((item) => {
-              if (
-                budgeHidingUsers.includes(
-                  item.item.itemContent.tweet_results.result.core.user_results
-                    .result.rest_id,
-                )
-              ) {
-                item.item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                  true;
-              }
-            });
-            break;
+          }
+        } else if (
+          entry.entryId.startsWith("conversationthread-") ||
+          entry.entryId.startsWith("tweetdetailrelatedtweets-")
+        ) {
+          // conversation or related tweets
+          // target: res.data.threaded_conversation_with_injections_v2.instructions[n].entries[n].content.items[n].item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
+          entry.content.items.forEach((item) => {
+            if (
+              Object.hasOwn(item.item.itemContent, "tweet_results") &&
+              localStorage.getItem(
+                item.item.itemContent.tweet_results.result.core.user_results
+                  .result.rest_id,
+              )
+            ) {
+              item.item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
+                true;
+              // item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
+              //   true;
+            }
+          });
         }
       });
       response.text = JSON.stringify(res);
@@ -191,16 +246,18 @@ xhook.after(function (request, response) {
     }
   } else if (request.url.includes("TweetResultByRestId")) {
     try {
+      // tweet detail when not logged in
+      // target: res.data.tweetResult.result.core.user_results.result.is_blue_verified
       let res = JSON.parse(response.text);
       if (
-        budgeHidingUsers.includes(
+        localStorage.getItem(
           res.data.tweetResult.result.core.user_results.result.rest_id,
         )
       ) {
         res.data.tweetResult.result.core.user_results.result.is_blue_verified =
           true;
-        res.data.tweetResult.result.core.user_results.result.legacy.verified =
-          true;
+        // res.data.tweetResult.result.core.user_results.result.legacy.verified =
+        //   true;
       }
       response.text = JSON.stringify(res);
     } catch (e) {
@@ -208,11 +265,13 @@ xhook.after(function (request, response) {
     }
   } else if (request.url.includes("recommendations.json")) {
     try {
+      // recommended users
+      // target: res[n].user.ext_is_blue_verified
       let res = JSON.parse(response.text);
       res.forEach((item) => {
-        if (budgeHidingUsers.includes(item.user_id)) {
+        if (localStorage.getItem(item.user_id)) {
           item.user.ext_is_blue_verified = true;
-          item.user.verified = true;
+          // item.user.verified = true;
         }
       });
       response.text = JSON.stringify(res);
@@ -220,25 +279,31 @@ xhook.after(function (request, response) {
       console.error(`Error with ${request.url}: ${e}`);
     }
   } else if (request.url.includes("all.json")) {
-    //     try {
-    //       let res = JSON.parse(response.text);
-    //       Object.entries(res.globalObjects.users).forEach(([key]) => {
-    //         if (budgeHidingUsers.includes(res.globalObjects.users[key].id_str)) {
-    //           res.globalObjects.users[key].ext_is_blue_verified = true;
-    //           res.globalObjects.users[key].verified = true;
-    //         }
-    //       });
-    //       response.text = JSON.stringify(res);
-    //     } catch (e) {
-    //       console.error(`Error with ${request.url}: ${e}`);
-    //     }
+    try {
+      // search results
+      // target: res.globalObjects.users[n].ext_is_blue_verified
+      let res = JSON.parse(response.text);
+      if (Object.keys(res.globalObjects).length !== 0) {
+        Object.entries(res.globalObjects.users).forEach(([key]) => {
+          if (localStorage.getItem(res.globalObjects.users[key].id_str)) {
+            res.globalObjects.users[key].ext_is_blue_verified = true;
+            // res.globalObjects.users[key].verified = true;
+          }
+        });
+      }
+      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
   } else if (request.url.includes("typeahead.json")) {
     try {
+      // search results
+      // target: res.users[n].ext_is_blue_verified
       let res = JSON.parse(response.text);
       Object.entries(res.users).forEach(([key]) => {
-        if (budgeHidingUsers.includes(res.users[key].id_str)) {
+        if (localStorage.getItem(res.users[key].id_str)) {
           res.users[key].ext_is_blue_verified = true;
-          res.users[key].verified = true;
+          // res.users[key].verified = true;
         }
       });
       response.text = JSON.stringify(res);

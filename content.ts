@@ -7,7 +7,7 @@ export const config: PlasmoCSConfig = {
 };
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "tabUrlUpdated") {
+  if (message.type === "movedToProfile") {
     let budgeEl = document.getElementById("muskist-budge");
     if (budgeEl) {
       budgeEl.remove();

@@ -16,6 +16,12 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 18
+      - name: Setup .env
+        run: |
+          touch .env
+          echo FIREFOX_EXT_ID="${{ secrets.FIREFOX_EXT_ID }}"
+          echo AMO_JWT_ISSUER="${{ secrets.AMO_JWT_ISSUER }}"
+          echo AMO_JWT_SECRET="${{ secrets.AMO_JWT_SECRET }}"
       - name: Setup pnpm with corepack
         run: |
           corepack enable pnpm
@@ -26,7 +32,7 @@ jobs:
         id: pnpm-cache
         run: |
           echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-      - name: Setup pnpm store & build artifact cache
+      - name: Setup pnpm store cache
         uses: actions/cache@v3
         with:
           path: |
@@ -38,8 +44,8 @@ jobs:
         run: pnpm i --frozen-lockfile
       - name: Build with Plasmo
         run: pnpm run build
-      - name: Sign for Firefox versions
-        run: pnpm web-ext sign --api-key=${{ secrets.AMO_JWT_ISSUER }} --api-secret=${{ secrets.AMO_JWT_SECRET }}
+      - name: Package with Plasmo
+        run: pnpm run package
       - uses: actions/upload-artifact@v3
         with:
           name: my-artifact

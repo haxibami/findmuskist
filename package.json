@@ -16,18 +16,17 @@
   },
   "packageManager": "pnpm@8.7.6",
   "scripts": {
-    "dev": "plasmo dev",
+    "dev": "plasmo dev --target=chrome-mv3",
+    "dev:firefox": "plasmo dev --target=firefox-mv3",
     "build:chrome": "plasmo build --target=chrome-mv3",
     "build:firefox": "plasmo build --target=firefox-mv3",
     "build": "pnpm run build:chrome && pnpm run build:firefox",
     "package:chrome": "plasmo package --target=chrome-mv3",
-    "package:firefox": "plasmo package --target=firefox-mv3",
-    "package": "pnpm run package:chrome && pnpm run package:firefox",
-    "lint:firefox": "web-ext lint",
-    "start:firefox": "web-ext run"
+    "package:firefox": "source .env && web-ext lint && web-ext sign --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET",
+    "package": "pnpm run package:chrome && pnpm run package:firefox"
   },
   "keywords": [],
-  "author": "haxibami <contact at haxibami dot net>",
+  "author": "haxibami <contact@haxibami.net>",
   "license": "MIT",
   "dependencies": {
     "plasmo": "^0.83.0",
@@ -54,7 +53,8 @@
     ],
     "browser_specific_settings": {
       "gecko": {
-        "id": "$FIREFOX_EXT_ID"
+        "id": "$FIREFOX_EXT_ID",
+        "strict_min_version": "92.0"
       }
     }
   },
