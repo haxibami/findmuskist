@@ -1,6 +1,10 @@
-div[data-testid="UserName"] svg[data-testid="icon-verified"] {
+div[data-testid="UserName"] svg[data-testid="icon-verified"],
+div[data-testid="cellInnerDiv"]
+  div[data-testid="UserCell"]
+  svg[data-testid="icon-verified"] {
   color: red;
 }
+
 div[data-testid="HoverCard"] svg[data-testid="verificationBadge"] {
   color: red;
 }

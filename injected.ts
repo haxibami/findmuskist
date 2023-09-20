@@ -2,6 +2,7 @@
 
 import xhook from "xhook";
 import badgeCss from "data-text:~badge.css";
+import { processTimelineEntry } from "./timeline.ts";
 
 xhook.after(function (request, response) {
   if (response.status !== 200) {
@@ -42,9 +43,30 @@ xhook.after(function (request, response) {
           let target = document.head || document.documentElement;
           target.appendChild(badgeStyle);
         }
+        response.text = JSON.stringify(res);
       }
       // TODO: remove from localStorage when `verification_info.reason` is no longer provided
-      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (request.url.includes("UserByRestId")) {
+    try {
+      let res = JSON.parse(response.text);
+      if (res.data.user.result.highlights_info.can_highlight_tweets === true) {
+        if (!localStorage.getItem(res.data.user.result.rest_id)) {
+          localStorage.setItem(res.data.user.result.rest_id, "true");
+        }
+        res.data.user.result.is_blue_verified = true;
+        let budgeEl = document.getElementById("muskist-budge");
+        if (!budgeEl) {
+          let badgeStyle = document.createElement("style");
+          badgeStyle.id = "muskist-budge";
+          badgeStyle.textContent = badgeCss;
+          let target = document.head || document.documentElement;
+          target.appendChild(badgeStyle);
+        }
+        response.text = JSON.stringify(res);
+      }
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
@@ -84,7 +106,7 @@ xhook.after(function (request, response) {
           }
         }
       }
-      // timeline tweets
+      // user tweets
       const entriesIndex = res.data.user.result[
         timelineName
       ].timeline.instructions.findIndex(
@@ -93,97 +115,7 @@ xhook.after(function (request, response) {
       res.data.user.result[timelineName].timeline.instructions[
         entriesIndex
       ].entries.forEach((entry) => {
-        if (
-          (entry.entryId.startsWith("tweet-") ||
-            entry.entryId.startsWith("promoted-tweet-")) &&
-          Object.keys(entry.content.itemContent.tweet_results).length !== 0
-        ) {
-          if (
-            entry.content.itemContent.tweet_results.result.__typename ===
-            "Tweet"
-          ) {
-            // normal tweet
-            // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
-            if (
-              localStorage.getItem(
-                entry.content.itemContent.tweet_results.result.core.user_results
-                  .result.rest_id,
-              )
-            ) {
-              entry.content.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                true;
-              // entry.content.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-              //   true;
-            }
-          } else if (
-            entry.content.itemContent.tweet_results.result.__typename ===
-            "TweetWithVisibilityResults"
-          ) {
-            // retweet (?)
-            // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified
-            if (
-              localStorage.getItem(
-                entry.content.itemContent.tweet_results.result.tweet.core
-                  .user_results.result.rest_id,
-              )
-            ) {
-              entry.content.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified =
-                true;
-              // entry.content.itemContent.tweet_results.result.tweet.core.user_results.result.legacy.verified =
-              //   true;
-            }
-          }
-        } else if (entry.entryId.startsWith("profile-conversation-")) {
-          // conversation
-          // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified
-          entry.content.items.forEach((item) => {
-            if (
-              item.item.itemContent.tweet_results.result.__typename === "Tweet"
-            ) {
-              if (
-                localStorage.getItem(
-                  item.item.itemContent.tweet_results.result.core.user_results
-                    .result.rest_id,
-                )
-              ) {
-                item.item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-                  true;
-                // item.item.itemContent.tweet_results.result.core.user_results.result.legacy.verified =
-                //   true;
-              }
-            } else if (
-              item.item.itemContent.tweet_results.result.__typename ===
-              "TweetWithVisibilityResults"
-            ) {
-              // retweet (?)
-              // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified
-              if (
-                localStorage.getItem(
-                  item.item.itemContent.tweet_results.result.tweet.core
-                    .user_results.result.rest_id,
-                )
-              ) {
-                item.item.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified =
-                  true;
-                // item.item.itemContent.tweet_results.result.tweet.core.user_results.result.legacy.verified =
-                //   true;
-              }
-            }
-          });
-        } else if (entry.entryId.startsWith("who-to-follow-")) {
-          // who to follow
-          // target: res.data.user.result.timeline_v2.timeline.instructions[n].entries[n].content.items[n].item.itemContent.user_results.result.is_blue_verified
-          entry.content.items.forEach((item) => {
-            if (
-              localStorage.getItem(
-                item.item.itemContent.user_results.result.rest_id,
-              )
-            ) {
-              item.item.itemContent.user_results.result.is_blue_verified = true;
-              // item.item.itemContent.user_results.result.legacy.verified = true;
-            }
-          });
-        }
+        processTimelineEntry(entry);
       });
       response.text = JSON.stringify(res);
     } catch (e) {
@@ -290,8 +222,21 @@ xhook.after(function (request, response) {
             // res.globalObjects.users[key].verified = true;
           }
         });
+        response.text = JSON.stringify(res);
       }
-      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (request.url.includes("/i/api/1.1/friends/following/list.json")) {
+    try {
+      let res = JSON.parse(response.text);
+      res.users.forEach((user) => {
+        if (localStorage.getItem(user.id_str)) {
+          user.ext_is_blue_verified = true;
+          // user.verified = true;
+          response.text = JSON.stringify(res);
+        }
+      });
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
@@ -305,6 +250,47 @@ xhook.after(function (request, response) {
           res.users[key].ext_is_blue_verified = true;
           // res.users[key].verified = true;
         }
+      });
+      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (
+    request.url.includes("HomeLatestTimeline") ||
+    request.url.includes("HomeTimeline")
+  ) {
+    try {
+      // performance.mark("start");
+      // latest timeline
+      // target: res.data.home.home_timeline_urt.instructions[n].entries[n].content.
+      let res = JSON.parse(response.text);
+      const entriesIndex =
+        res.data.home.home_timeline_urt.instructions.findIndex(
+          (instruction) => instruction.type === "TimelineAddEntries",
+        );
+      res.data.home.home_timeline_urt.instructions[
+        entriesIndex
+      ].entries.forEach((entry) => {
+        processTimelineEntry(entry);
+      });
+      response.text = JSON.stringify(res);
+      // performance.mark("end");
+      // performance.measure("timeline", "start", "end");
+      // console.log(performance.getEntriesByName("timeline"));
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (request.url.includes("ListLatestTweetsTimeline")) {
+    try {
+      let res = JSON.parse(response.text);
+      const entriesIndex =
+        res.data.list.tweets_timeline.timeline.instructions.findIndex(
+          (instruction) => instruction.type === "TimelineAddEntries",
+        );
+      res.data.list.tweets_timeline.timeline.instructions[
+        entriesIndex
+      ].entries.forEach((entry) => {
+        processTimelineEntry(entry);
       });
       response.text = JSON.stringify(res);
     } catch (e) {
