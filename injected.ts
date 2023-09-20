@@ -70,6 +70,19 @@ xhook.after(function (request, response) {
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
+  } else if (request.url.includes("UsersByRestIds")) {
+    try {
+      let res = JSON.parse(response.text);
+      res.data.users.forEach((user) => {
+        if (localStorage.getItem(user.result.rest_id)) {
+          user.result.is_blue_verified = true;
+          // user.legacy.verified = true;
+        }
+      });
+      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
   } else if (
     request.url.includes("UserTweets") ||
     request.url.includes("UserMedia") ||
@@ -113,6 +126,23 @@ xhook.after(function (request, response) {
         (instruction) => instruction.type === "TimelineAddEntries",
       );
       res.data.user.result[timelineName].timeline.instructions[
+        entriesIndex
+      ].entries.forEach((entry) => {
+        processTimelineEntry(entry);
+      });
+      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (request.url.includes("Bookmarks")) {
+    try {
+      let res = JSON.parse(response.text);
+      // user tweets
+      const entriesIndex =
+        res.data.bookmark_timeline_v2.timeline.instructions.findIndex(
+          (instruction) => instruction.type === "TimelineAddEntries",
+        );
+      res.data.bookmark_timeline_v2.timeline.instructions[
         entriesIndex
       ].entries.forEach((entry) => {
         processTimelineEntry(entry);
@@ -210,7 +240,7 @@ xhook.after(function (request, response) {
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
-  } else if (request.url.includes("all.json")) {
+  } else if (request.url.includes("/i/api/2/notifications/all.json")) {
     try {
       // search results
       // target: res.globalObjects.users[n].ext_is_blue_verified
@@ -260,7 +290,6 @@ xhook.after(function (request, response) {
     request.url.includes("HomeTimeline")
   ) {
     try {
-      // performance.mark("start");
       // latest timeline
       // target: res.data.home.home_timeline_urt.instructions[n].entries[n].content.
       let res = JSON.parse(response.text);
@@ -274,9 +303,6 @@ xhook.after(function (request, response) {
         processTimelineEntry(entry);
       });
       response.text = JSON.stringify(res);
-      // performance.mark("end");
-      // performance.measure("timeline", "start", "end");
-      // console.log(performance.getEntriesByName("timeline"));
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
