@@ -146,7 +146,7 @@ export const processTimeline = (timeline: any) => {
 };
 
 export const timelineKeys = {
-  UserHighlights: "data.user.result.timeline.timeline",
+  UserHighlightsTweets: "data.user.result.timeline.timeline",
   UserTweets: "data.user.result.timeline_v2.timeline",
   UserTweetsAndReplies: "data.user.result.timeline_v2.timeline",
   UserMedia: "data.user.result.timeline_v2.timeline",

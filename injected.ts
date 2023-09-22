@@ -18,7 +18,7 @@ xhook.after(function (request, response) {
     return;
   }
   const apiPath = url.pathname.split("/").slice(-1)[0];
-  if (apiPath === ("UserByScreenName" || "UserByRestId")) {
+  if (apiPath === "UserByScreenName" || apiPath === "UserByRestId") {
     try {
       // user profile
       let res = JSON.parse(response.text);
@@ -47,7 +47,6 @@ xhook.after(function (request, response) {
           res.data.user.result.has_hidden_subscriptions_on_profile === true ||
           res.data.user.result.has_hidden_likes_on_profile === true
         ) {
-          console.log("another");
           if (!localStorage.getItem(res.data.user.result.rest_id)) {
             localStorage.setItem(res.data.user.result.rest_id, "true");
           }
@@ -58,21 +57,6 @@ xhook.after(function (request, response) {
       }
       // TODO: remove from localStorage when `verification_info.reason`
       // nor `highlights_info.can_highlight_tweets` is found
-    } catch (e) {
-      console.error(`Error with ${request.url}: ${e}`);
-    }
-  } else if (apiPath === "UserByRestId") {
-    try {
-      // user profile 2
-      let res = JSON.parse(response.text);
-      if (res.data.user.result.highlights_info.can_highlight_tweets === true) {
-        if (!localStorage.getItem(res.data.user.result.rest_id)) {
-          localStorage.setItem(res.data.user.result.rest_id, "true");
-        }
-        res.data.user.result.is_blue_verified = true;
-        setBadgeCss();
-        response.text = JSON.stringify(res);
-      }
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
