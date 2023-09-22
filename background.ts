@@ -67,12 +67,16 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
       }
       lastVisitedProfUrl = tab.url;
     } else {
-      if (regex2.test(tab.url)) {
-        chrome.tabs.sendMessage(tabId, {
-          type: "movedToProfile",
-          url: tab.url,
-        });
-      }
+      //       if (regex2.test(tab.url)) {
+      //         console.log("reload");
+      //         // dirty hack
+      //         setTimeout(() => {
+      //           chrome.tabs.sendMessage(tabId, {
+      //             type: "movedToProfile",
+      //             url: tab.url,
+      //           });
+      //         }, 3000);
+      //       }
     }
   }
 });

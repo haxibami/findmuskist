@@ -6,11 +6,10 @@ import {
   setBadgeCss,
   timelineKeys,
   getTimeline,
-} from "./timeline.ts";
+} from "./timeline";
 
 xhook.after(function (request, response) {
   const url = new URL(request.url);
-  const apiPath = url.pathname.split("/").slice(-1)[0];
   if (
     response.status !== 200 ||
     url.hostname !== "twitter.com" ||
@@ -18,30 +17,47 @@ xhook.after(function (request, response) {
   ) {
     return;
   }
-  if (apiPath === "UserByScreenName") {
+  const apiPath = url.pathname.split("/").slice(-1)[0];
+  if (apiPath === ("UserByScreenName" || "UserByRestId")) {
     try {
       // user profile
       let res = JSON.parse(response.text);
-      const vf_info = res.data.user.result.verification_info;
       if (
-        Object.hasOwn(vf_info, "reason") &&
         res.data.user.result.is_blue_verified === false &&
         !res.data.user.result.legacy.verified_type
       ) {
-        if (!localStorage.getItem(res.data.user.result.rest_id)) {
-          localStorage.setItem(res.data.user.result.rest_id, "true");
-        }
-        res.data.user.result.is_blue_verified = true;
-        // res.data.user.result.legacy.verified = true;
-        // res.data.user.result.verification_info.is_identity_verified = true;
-        // res.data.user.result.has_hidden_subscriptions_on_profile = false;
-        res.data.user.result.verification_info.reason.description.text +=
-          "。また、認証バッジを非表示にしています。";
+        if (
+          Object.hasOwn(res.data.user.result, "verification_info") &&
+          Object.hasOwn(res.data.user.result.verification_info, "reason")
+        ) {
+          if (!localStorage.getItem(res.data.user.result.rest_id)) {
+            localStorage.setItem(res.data.user.result.rest_id, "true");
+          }
+          res.data.user.result.is_blue_verified = true;
+          // res.data.user.result.legacy.verified = true;
+          // res.data.user.result.verification_info.is_identity_verified = true;
+          // res.data.user.result.has_hidden_subscriptions_on_profile = false;
+          res.data.user.result.verification_info.reason.description.text +=
+            "。また、認証バッジを非表示にしています。";
 
-        setBadgeCss();
-        response.text = JSON.stringify(res);
+          setBadgeCss();
+          response.text = JSON.stringify(res);
+        } else if (
+          res.data.user.result.highlights_info.can_highlight_tweets === true ||
+          res.data.user.result.has_hidden_subscriptions_on_profile === true ||
+          res.data.user.result.has_hidden_likes_on_profile === true
+        ) {
+          console.log("another");
+          if (!localStorage.getItem(res.data.user.result.rest_id)) {
+            localStorage.setItem(res.data.user.result.rest_id, "true");
+          }
+          res.data.user.result.is_blue_verified = true;
+          setBadgeCss();
+          response.text = JSON.stringify(res);
+        }
       }
-      // TODO: remove from localStorage when `verification_info.reason` is not found
+      // TODO: remove from localStorage when `verification_info.reason`
+      // nor `highlights_info.can_highlight_tweets` is found
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
@@ -95,6 +111,18 @@ xhook.after(function (request, response) {
         res.data.tweetResult.result.core.user_results.result.is_blue_verified =
           true;
       }
+      response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (apiPath === "CommunitiesCreateButtonQuery") {
+    try {
+      let res = JSON.parse(response.text);
+      res.data.viewer.create_community_action_result = {
+        __typename: "CommunityCreateActionAvailable",
+        __isCommunityCreateActionResult: "CommunityCreateActionAvailable",
+        // reason: "Verified",
+      };
       response.text = JSON.stringify(res);
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
@@ -159,6 +187,17 @@ xhook.after(function (request, response) {
         }
       });
       response.text = JSON.stringify(res);
+    } catch (e) {
+      console.error(`Error with ${request.url}: ${e}`);
+    }
+  } else if (url.pathname.endsWith("/i/api/1.1/dm/inbox_initial_state.json")) {
+    try {
+      let res = JSON.parse(response.text);
+      Object.entries(res.inbox_initial_state.users).forEach(([key]) => {
+        if (localStorage.getItem(res.inbox_initial_state.users[key].id_str)) {
+          res.inbox_initial_state.users[key]._is_blue_verified = true;
+        }
+      });
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }

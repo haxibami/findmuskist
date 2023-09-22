@@ -14,12 +14,14 @@ export const setBadgeCss = () => {
 const processContentItem = (item: any) => {
   if (
     !Object.hasOwn(item.itemContent, "tweet_results") ||
-    !Object.hasOwn(item.itemContent.tweet_results, "result") ||
-    !Object.hasOwn(item.itemContent.tweet_results.result, "core")
+    !Object.hasOwn(item.itemContent.tweet_results, "result")
   ) {
     return;
   }
   if (item.itemContent.tweet_results.result.__typename === "Tweet") {
+    if (!Object.hasOwn(item.itemContent.tweet_results.result, "core")) {
+      return;
+    }
     if (
       localStorage.getItem(
         item.itemContent.tweet_results.result.core.user_results.result.rest_id,
@@ -33,6 +35,10 @@ const processContentItem = (item: any) => {
         item.itemContent.tweet_results.result,
         "quoted_status_result",
       ) &&
+      Object.hasOwn(
+        item.itemContent.tweet_results.result.quoted_status_result.result,
+        "core",
+      ) &&
       localStorage.getItem(
         item.itemContent.tweet_results.result.quoted_status_result.result.core
           .user_results.result.rest_id,
@@ -45,6 +51,9 @@ const processContentItem = (item: any) => {
     item.itemContent.tweet_results.result.__typename ===
     "TweetWithVisibilityResults"
   ) {
+    if (!Object.hasOwn(item.itemContent.tweet_results.result.tweet, "core")) {
+      return;
+    }
     if (
       localStorage.getItem(
         item.itemContent.tweet_results.result.tweet.core.user_results.result
@@ -59,6 +68,10 @@ const processContentItem = (item: any) => {
         item.itemContent.tweet_results.result.tweet,
         "quoted_status_result",
       ) &&
+      Object.hasOwn(
+        item.itemContent.tweet_results.result.tweet.quoted_status_result.result,
+        "core",
+      ) &&
       localStorage.getItem(
         item.itemContent.tweet_results.result.tweet.quoted_status_result.result
           .core.user_results.result.rest_id,
@@ -70,11 +83,24 @@ const processContentItem = (item: any) => {
   }
 };
 
+const processUserItem = (item: any) => {
+  if (
+    !Object.hasOwn(item.itemContent, "user_results") ||
+    !Object.hasOwn(item.itemContent.user_results, "result")
+  ) {
+    return;
+  }
+  if (localStorage.getItem(item.itemContent.user_results.result.rest_id)) {
+    item.itemContent.user_results.result.is_blue_verified = true;
+  }
+};
+
 const processTimelineEntry = (entry: any) => {
   if (
     entry.entryId.startsWith("tweet-") ||
     entry.entryId.startsWith("promoted-tweet-")
   ) {
+    // single tweet
     processContentItem(entry.content);
   } else if (
     entry.entryId.startsWith("profile-conversation-") ||
@@ -83,28 +109,21 @@ const processTimelineEntry = (entry: any) => {
     entry.entryId.startsWith("conversationthread-") ||
     entry.entryId.startsWith("tweetdetailrelatedtweets-")
   ) {
+    // conversation, thread
     entry.content.items.forEach((item) => {
       processContentItem(item.item);
     });
-  } else if (entry.entryId.startsWith("who-to-follow-")) {
-    entry.content.items.forEach((item) => {
-      if (
-        localStorage.getItem(item.item.itemContent.user_results.result.rest_id)
-      ) {
-        item.item.itemContent.user_results.result.is_blue_verified = true;
-      }
-    });
   } else if (entry.entryId.startsWith("user-")) {
-    if (
-      localStorage.getItem(
-        entry.content.itemContent.user_results.result.rest_id,
-      )
-    ) {
-      if (Object.entries(entry.content.itemContent.user_results).length === 0) {
-        return;
-      }
-      entry.content.itemContent.user_results.result.is_blue_verified = true;
-    }
+    // user
+    processUserItem(entry.content);
+  } else if (
+    entry.entryId.startsWith("who-to-follow-") ||
+    entry.entryId.startsWith("mergeallcandidatesmodule-")
+  ) {
+    // user list
+    entry.content.items.forEach((item) => {
+      processUserItem(item.item);
+    });
   }
 };
 
@@ -131,6 +150,7 @@ export const timelineKeys = {
   UserTweets: "data.user.result.timeline_v2.timeline",
   UserTweetsAndReplies: "data.user.result.timeline_v2.timeline",
   UserMedia: "data.user.result.timeline_v2.timeline",
+  Likes: "data.user.result.timeline_v2.timeline",
   Bookmarks: "data.bookmark_timeline_v2.timeline",
   TweetDetail: "data.threaded_conversation_with_injections_v2",
   HomeTimeline: "data.home.home_timeline_urt",
@@ -144,6 +164,8 @@ export const timelineKeys = {
   Favoriters: "data.favoriters_timeline.timeline",
   Retweeters: "data.retweeters_timeline.timeline",
   ListSubscribers: "data.list.subscribers_timeline.timeline",
+  CommunitiesMainPageTimeline: "data.viewer.communities_timeline.timeline",
+  ConnectTabTimeline: "data.connect_tab_timeline.timeline",
 };
 
 const getkeys = (path: string) => {
