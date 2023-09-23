@@ -22,7 +22,7 @@
     "build:firefox": "plasmo build --target=firefox-mv3",
     "build": "pnpm run build:chrome && pnpm run build:firefox",
     "package:chrome": "plasmo package --target=chrome-mv3",
-    "package:firefox": "source .env && web-ext lint && web-ext build && web-ext sign --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET",
+    "package:firefox": ". ./.env && web-ext lint && web-ext build && web-ext sign --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET",
     "package": "pnpm run package:chrome && pnpm run package:firefox"
   },
   "keywords": [],
