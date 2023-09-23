@@ -84,7 +84,7 @@ xhook.after(function (request, response) {
     }
   } else if (apiPath === "TweetResultByRestId") {
     try {
-      // tweet detail when not logged in
+      // tweet detail 2
       // target: res.data.tweetResult.result.core.user_results.result.is_blue_verified
       let res = JSON.parse(response.text);
       if (
@@ -99,19 +99,21 @@ xhook.after(function (request, response) {
     } catch (e) {
       console.error(`Error with ${request.url}: ${e}`);
     }
-  } else if (apiPath === "CommunitiesCreateButtonQuery") {
-    try {
-      let res = JSON.parse(response.text);
-      res.data.viewer.create_community_action_result = {
-        __typename: "CommunityCreateActionAvailable",
-        __isCommunityCreateActionResult: "CommunityCreateActionAvailable",
-        // reason: "Verified",
-      };
-      response.text = JSON.stringify(res);
-    } catch (e) {
-      console.error(`Error with ${request.url}: ${e}`);
-    }
-  } else if (url.pathname.endsWith("/i/api/1.1/users/recommendations.json")) {
+  }
+  //   else if (apiPath === "CommunitiesCreateButtonQuery") {
+  //     try {
+  //       let res = JSON.parse(response.text);
+  //       res.data.viewer.create_community_action_result = {
+  //         __typename: "CommunityCreateActionAvailable",
+  //         __isCommunityCreateActionResult: "CommunityCreateActionAvailable",
+  //         // reason: "Verified",
+  //       };
+  //       response.text = JSON.stringify(res);
+  //     } catch (e) {
+  //       console.error(`Error with ${request.url}: ${e}`);
+  //     }
+  //   }
+  else if (url.pathname.endsWith("/i/api/1.1/users/recommendations.json")) {
     try {
       // recommended users
       // target: res[n].user.ext_is_blue_verified

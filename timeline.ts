@@ -118,6 +118,8 @@ const processTimelineEntry = (entry: any) => {
     processUserItem(entry.content);
   } else if (
     entry.entryId.startsWith("who-to-follow-") ||
+    entry.entryId.startsWith("singleusermodule-") ||
+    entry.entryId.startsWith("similartomodule-") ||
     entry.entryId.startsWith("mergeallcandidatesmodule-")
   ) {
     // user list

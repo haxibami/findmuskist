@@ -13,15 +13,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      - name: Get tag name
+        run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
       - name: Setup .env
         run: |
           touch .env
-          echo FIREFOX_EXT_ID="${{ secrets.FIREFOX_EXT_ID }}"
-          echo AMO_JWT_ISSUER="${{ secrets.AMO_JWT_ISSUER }}"
-          echo AMO_JWT_SECRET="${{ secrets.AMO_JWT_SECRET }}"
+          echo FIREFOX_EXT_ID="${{ secrets.FIREFOX_EXT_ID }}" >> .env
+          echo AMO_JWT_ISSUER="${{ secrets.AMO_JWT_ISSUER }}" >> .env
+          echo AMO_JWT_SECRET="${{ secrets.AMO_JWT_SECRET }}" >> .env
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
       - name: Setup pnpm with corepack
         run: |
           corepack enable pnpm
@@ -46,9 +48,7 @@ jobs:
         run: pnpm run build
       - name: Package with Plasmo
         run: pnpm run package
-      - uses: actions/upload-artifact@v3
-        with:
-          name: my-artifact
-          path: |
-            ./build/chrome-mv3-prod.zip
-            ./build/*.xpi
+      - name: Create Release
+        run: gh release create ${{ env.TAG_NAME }} ./build/chrome-mv3-prod.zip ./build/*.xpi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

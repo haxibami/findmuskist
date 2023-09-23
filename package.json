@@ -1,7 +1,7 @@
 {
   "name": "findmuskist",
   "displayName": "Find Muskists",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "An extension that find hidden Muskists",
   "type": "module",
   "engines": {
@@ -54,7 +54,7 @@
     "browser_specific_settings": {
       "gecko": {
         "id": "$FIREFOX_EXT_ID",
-        "strict_min_version": "92.0"
+        "strict_min_version": "109.0"
       }
     }
   },
