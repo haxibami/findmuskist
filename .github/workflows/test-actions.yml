@@ -13,8 +13,8 @@ jobs:
       - name: Setup .env
         run: |
           touch .env
-          echo FAKE_SECRET_WITH_ESCAPE=\"${{ secrets.FAKE_SECRET }}\" >> .env
-          echo FAKE_SECRET="${{ secrets.FAKE_SECRET }}" >> .env
-          echo FAKE_SECRET_QUOTED="${{ secrets.FAKE_SECRET_QUOTED }}" >> .env
+          echo FAKE_VAR_WITH_ESCAPE=\"${{ vars.FAKE_VAR }}\" >> .env
+          echo FAKE_VAR="${{ vars.FAKE_VAR }}" >> .env
+          echo FAKE_VAR_QUOTED="${{ vars.FAKE_VAR_QUOTED }}" >> .env
       - name: Check .env
         run: cat .env
