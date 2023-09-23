@@ -1,13 +1,16 @@
+import { isTopTabPath } from "./constant";
 import badgeCss from "data-text:~badge.css";
 
 export const setBadgeCss = () => {
-  let budgeEl = document.getElementById("muskist-budge");
-  if (!budgeEl) {
-    let badgeStyle = document.createElement("style");
-    badgeStyle.id = "muskist-budge";
-    badgeStyle.textContent = badgeCss;
-    let target = document.head || document.documentElement;
-    target.appendChild(badgeStyle);
+  if (isTopTabPath.test(location.href)) {
+    let budgeEl = document.getElementById("muskist-budge");
+    if (!budgeEl) {
+      let badgeStyle = document.createElement("style");
+      badgeStyle.id = "muskist-budge";
+      badgeStyle.textContent = badgeCss;
+      let target = document.head || document.documentElement;
+      target.appendChild(badgeStyle);
+    }
   }
 };
 

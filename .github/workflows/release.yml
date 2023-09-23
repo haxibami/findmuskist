@@ -13,14 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Get tag name
-        run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-      - name: Setup .env
-        run: |
-          touch .env
-          echo FIREFOX_EXT_ID="${{ secrets.FIREFOX_EXT_ID }}" >> .env
-          echo AMO_JWT_ISSUER="${{ secrets.AMO_JWT_ISSUER }}" >> .env
-          echo AMO_JWT_SECRET="${{ secrets.AMO_JWT_SECRET }}" >> .env
       - uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -32,8 +24,7 @@ jobs:
           echo "${{ env.PNPM_HOME }}" >> $GITHUB_PATH
       - name: Get pnpm store path
         id: pnpm-cache
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+        run: echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
       - name: Setup pnpm store cache
         uses: actions/cache@v3
         with:
@@ -44,11 +35,24 @@ jobs:
             ${{ runner.os }}-
       - name: Install node dependencies
         run: pnpm i --frozen-lockfile
+      - name: Get tag name
+        run: echo "TAG_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+      - name: Setup .env
+        run: |
+          touch .env
+          echo FIREFOX_EXT_ID=\"${{ secrets.FIREFOX_EXT_ID }}\" >> .env
+          echo AMO_JWT_ISSUER=\"${{ secrets.AMO_JWT_ISSUER }}\" >> .env
+          echo AMO_JWT_SECRET=\"${{ secrets.AMO_JWT_SECRET }}\" >> .env
       - name: Build with Plasmo
         run: pnpm run build
       - name: Package with Plasmo
         run: pnpm run package
+      - name: Modify file name
+        run: |
+          mkdir ./dist
+          cp ./build/chrome-mv3-prod.zip ./dist/findmuskist-chrome-${{ env.TAG_NAME }}.zip
+          cp ./build/*.xpi ./dist/findmuskist-firefox-${{ env.TAG_NAME }}.xpi
       - name: Create Release
-        run: gh release create ${{ env.TAG_NAME }} ./build/chrome-mv3-prod.zip ./build/*.xpi
+        run: gh release create ${{ env.TAG_NAME }} ./dist/* -n "Updated:"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.PAT }}

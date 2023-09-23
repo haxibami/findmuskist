@@ -23,7 +23,17 @@ div[data-testid="HoverCard"] > div > div > span > span::after {
   height: 100%;
   visibility: visible;
   display: inline;
-  content: "隠れ認証済みアカウント";
+  content: var(--verified-hover-title);
+}
+
+div[data-testid="HoverCard"]
+  > div
+  > div
+  > div:nth-child(2)
+  > span
+  > span:nth-child(1)::after {
+  all: inherit;
+  content: var(--verified-hover-text);
 }
 
 h2[role="heading"] svg[data-testid="icon-verified"] {

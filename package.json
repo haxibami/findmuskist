@@ -1,7 +1,7 @@
 {
   "name": "findmuskist",
   "displayName": "Find Muskists",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "An extension that find hidden Muskists",
   "type": "module",
   "engines": {
@@ -22,7 +22,7 @@
     "build:firefox": "plasmo build --target=firefox-mv3",
     "build": "pnpm run build:chrome && pnpm run build:firefox",
     "package:chrome": "plasmo package --target=chrome-mv3",
-    "package:firefox": "source .env && web-ext lint && web-ext sign --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET",
+    "package:firefox": "source .env && web-ext lint && web-ext build && web-ext sign --api-key=$AMO_JWT_ISSUER --api-secret=$AMO_JWT_SECRET",
     "package": "pnpm run package:chrome && pnpm run package:firefox"
   },
   "keywords": [],
@@ -30,12 +30,11 @@
   "license": "MIT",
   "dependencies": {
     "plasmo": "^0.83.0",
-    "quicktype": "^23.0.75",
-    "ts-node": "^10.9.1",
     "xhook": "^1.6.2"
   },
   "manifest": {
     "permissions": [
+      "cookies",
       "tabs"
     ],
     "host_permissions": [
@@ -67,7 +66,7 @@
   },
   "devDependencies": {
     "@types/chrome": "^0.0.246",
-    "@types/node": "^20.6.2",
+    "@types/node": "^20.6.3",
     "@types/xhook": "^1.5.0",
     "typescript": "^5.2.2",
     "web-ext": "^7.7.0"
