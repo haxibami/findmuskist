@@ -1,7 +1,7 @@
 {
   "name": "findmuskist",
   "displayName": "Find Muskists",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "An extension that find hidden Muskists",
   "type": "module",
   "engines": {

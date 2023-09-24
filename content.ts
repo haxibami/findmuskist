@@ -5,6 +5,7 @@ import injected from "url:~injected.ts";
 import type { Lang } from "./i18n";
 
 export const config: PlasmoCSConfig = {
+  matches: ["https://*.twitter.com/*", "https://*.x.com/*"],
   all_frames: true,
   run_at: "document_start",
 };
