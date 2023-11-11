@@ -6,6 +6,7 @@ import type { Lang } from "./i18n";
 
 export const config: PlasmoCSConfig = {
   matches: ["https://*.twitter.com/*", "https://*.x.com/*"],
+  exclude_matches: ["https://*.twitter.com/i/tweetdeck/*"],
   all_frames: true,
   run_at: "document_start",
 };

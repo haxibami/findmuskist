@@ -39,6 +39,10 @@ const processContentItem = (item: any) => {
         "quoted_status_result",
       ) &&
       Object.hasOwn(
+        item.itemContent.tweet_results.result.quoted_status_result,
+        "result",
+      ) &&
+      Object.hasOwn(
         item.itemContent.tweet_results.result.quoted_status_result.result,
         "core",
       ) &&

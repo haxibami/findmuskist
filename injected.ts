@@ -12,12 +12,18 @@ xhook.after(function (request, response) {
   const url = new URL(request.url);
   if (
     response.status !== 200 ||
-    url.hostname !== "twitter.com" ||
-    !url.pathname.startsWith("/i/api/")
+    (url.hostname !== "twitter.com" && url.hostname !== "api.twitter.com") ||
+    !(
+      url.pathname.startsWith("/i/api/") || url.pathname.startsWith("/graphql/")
+    )
   ) {
+    // deny except twitter.com/i/api/* and api.twitter.com/graphql/*
     return;
   }
-  if (url.pathname.startsWith("/i/api/graphql/")) {
+  if (
+    url.pathname.startsWith("/i/api/graphql/") ||
+    url.pathname.startsWith("/graphql/")
+  ) {
     // filter graphql requests
     const apiPath = url.pathname.split("/").slice(-1)[0];
     if (apiPath === "UserByScreenName" || apiPath === "UserByRestId") {
@@ -39,7 +45,6 @@ xhook.after(function (request, response) {
             // res.data.user.result.legacy.verified = true;
             // res.data.user.result.verification_info.is_identity_verified = true;
             // res.data.user.result.has_hidden_subscriptions_on_profile = false;
-
             setBadgeCss();
             response.text = JSON.stringify(res);
           } else if (
