@@ -84,7 +84,10 @@ xhook.after(function (request, response) {
       try {
         let res = JSON.parse(response.text);
         res.data.users.forEach((user) => {
-          if (localStorage.getItem(user.result.rest_id)) {
+          if (
+            Object.hasOwn(user, "result") &&
+            localStorage.getItem(user.result.rest_id)
+          ) {
             user.result.is_blue_verified = true;
           }
         });
