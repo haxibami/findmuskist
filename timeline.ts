@@ -72,7 +72,6 @@ const processTimelineEntry = (entry: TimelineEntry) => {
   if (!entry) {
     return;
   }
-  console.log(entry.entryId);
   // TODO: "community-to-join", "list-search-.+-list-.+"
   const singleTweetRegex = new RegExp(
     `^(${["tweet-", "promoted-tweet-"].join("|")})`,
@@ -149,8 +148,6 @@ const processTimelineEntry = (entry: TimelineEntry) => {
     for (const item of entry.content.items) {
       processUserResults(item.item.itemContent.user_results);
     }
-  } else {
-    console.log(`none of the above: ${entry.entryId}`);
   }
 };
 
