@@ -2,8 +2,6 @@ import type { PlasmoCSConfig } from "plasmo";
 import { i18n } from "./i18n";
 import injected from "url:~injected.ts";
 
-import type { Lang } from "./i18n";
-
 export const config: PlasmoCSConfig = {
   matches: ["https://*.twitter.com/*", "https://*.x.com/*"],
   exclude_matches: ["https://*.twitter.com/i/tweetdeck/*"],
@@ -13,9 +11,9 @@ export const config: PlasmoCSConfig = {
 
 chrome.runtime.onMessage.addListener((message) => {
   if (message.type === "movedToProf") {
-    let budgeEl = document.getElementById("muskist-budge");
-    if (budgeEl) {
-      budgeEl.remove();
+    const hovercardCss = document.getElementById("muskist-hovercard-css");
+    if (hovercardCss) {
+      hovercardCss.remove();
     }
   }
 });
@@ -34,7 +32,7 @@ chrome.runtime.onMessage.addListener((message) => {
   }
 });
 
-let interceptElem = document.createElement("script");
+const interceptElem = document.createElement("script");
 interceptElem.src = injected;
 interceptElem.type = "module";
 (document.head || document.documentElement).appendChild(interceptElem);

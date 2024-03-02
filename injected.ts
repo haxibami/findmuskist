@@ -1,14 +1,13 @@
 // wraps XMLHttpRequest to modify the response
 
 import xhook from "xhook";
-import {
-  processTimeline,
-  setBadgeCss,
-  timelineKeys,
-  getTimeline,
-} from "./timeline";
+import { processTimeline, timelineKeys, getTimeline } from "./timeline";
 
-xhook.after(function (request, response) {
+import { setHovercardCss, setGlobalCss } from "./style";
+
+setGlobalCss();
+
+xhook.after((request, response) => {
   const url = new URL(request.url);
   if (
     response.status !== 200 ||
@@ -20,6 +19,10 @@ xhook.after(function (request, response) {
     // deny except twitter.com/i/api/* and api.twitter.com/graphql/*
     return;
   }
+
+  const muskistsStr = localStorage.getItem("muskists");
+  const muskists = muskistsStr?.split(",");
+
   if (
     url.pathname.startsWith("/i/api/graphql/") ||
     url.pathname.startsWith("/graphql/")
@@ -29,7 +32,7 @@ xhook.after(function (request, response) {
     if (apiPath === "UserByScreenName" || apiPath === "UserByRestId") {
       // user profile
       try {
-        let res = JSON.parse(response.text);
+        const res = JSON.parse(response.text);
         if (
           res.data.user.result.is_blue_verified === false &&
           !res.data.user.result.legacy.verified_type
@@ -38,14 +41,21 @@ xhook.after(function (request, response) {
             Object.hasOwn(res.data.user.result, "verification_info") &&
             Object.hasOwn(res.data.user.result.verification_info, "reason")
           ) {
-            if (!localStorage.getItem(res.data.user.result.rest_id)) {
-              localStorage.setItem(res.data.user.result.rest_id, "true");
+            if (
+              !muskists ||
+              !muskists.includes(res.data.user.result.legacy.screen_name)
+            ) {
+              localStorage.setItem(
+                "muskists",
+                `${muskistsStr ? `${muskistsStr},` : ""}${res.data.user.result.legacy.screen_name}`,
+              );
+              setGlobalCss();
             }
             res.data.user.result.is_blue_verified = true;
             // res.data.user.result.legacy.verified = true;
             // res.data.user.result.verification_info.is_identity_verified = true;
             // res.data.user.result.has_hidden_subscriptions_on_profile = false;
-            setBadgeCss();
+            setHovercardCss();
             response.text = JSON.stringify(res);
           } else if (
             res.data.user.result.highlights_info.can_highlight_tweets ===
@@ -53,16 +63,28 @@ xhook.after(function (request, response) {
             res.data.user.result.has_hidden_subscriptions_on_profile === true ||
             res.data.user.result.has_hidden_likes_on_profile === true
           ) {
-            if (!localStorage.getItem(res.data.user.result.rest_id)) {
-              localStorage.setItem(res.data.user.result.rest_id, "true");
+            if (
+              !muskists ||
+              !muskists.includes(res.data.user.result.legacy.screen_name)
+            ) {
+              localStorage.setItem(
+                "muskists",
+                `${muskistsStr ? `${muskistsStr},` : ""}${res.data.user.result.legacy.screen_name}`,
+              );
+              setGlobalCss();
             }
             res.data.user.result.is_blue_verified = true;
 
-            setBadgeCss();
+            setHovercardCss();
             response.text = JSON.stringify(res);
           } else {
-            if (localStorage.getItem(res.data.user.result.rest_id)) {
-              localStorage.removeItem(res.data.user.result.rest_id);
+            if (muskists.includes(res.data.user.result.legacy.screen_name)) {
+              localStorage.setItem(
+                "muskists",
+                muskists
+                  .filter((x) => x !== res.data.user.result.legacy.screen_name)
+                  .join(","),
+              );
             }
           }
         }
@@ -72,8 +94,8 @@ xhook.after(function (request, response) {
     } else if (Object.keys(timelineKeys).some((key) => apiPath === key)) {
       // timeline
       try {
-        let res = JSON.parse(response.text);
-        let timeline = getTimeline(res, apiPath);
+        const res = JSON.parse(response.text);
+        const timeline = getTimeline(res, apiPath);
         processTimeline(timeline);
         response.text = JSON.stringify(res);
       } catch (e) {
@@ -82,15 +104,15 @@ xhook.after(function (request, response) {
     } else if (apiPath === "UsersByRestIds") {
       // user lists
       try {
-        let res = JSON.parse(response.text);
-        res.data.users.forEach((user) => {
+        const res = JSON.parse(response.text);
+        for (const user of res.data.users) {
           if (
             Object.hasOwn(user, "result") &&
-            localStorage.getItem(user.result.rest_id)
+            muskists?.includes(user.result.legacy.screen_name)
           ) {
             user.result.is_blue_verified = true;
           }
-        });
+        }
         response.text = JSON.stringify(res);
       } catch (e) {
         console.error(`Error with ${request.url}: ${e}`);
@@ -98,10 +120,11 @@ xhook.after(function (request, response) {
     } else if (apiPath === "TweetResultByRestId") {
       // tweet detail
       try {
-        let res = JSON.parse(response.text);
+        const res = JSON.parse(response.text);
         if (
-          localStorage.getItem(
-            res.data.tweetResult.result.core.user_results.result.rest_id,
+          muskists?.includes(
+            res.data.tweetResult.result.core.user_results.result.legacy
+              .screen_name,
           )
         ) {
           res.data.tweetResult.result.core.user_results.result.is_blue_verified =
@@ -121,13 +144,13 @@ xhook.after(function (request, response) {
     ) {
       // notifications
       try {
-        let res = JSON.parse(response.text);
+        const res = JSON.parse(response.text);
         if (Object.keys(res.globalObjects).length !== 0) {
-          Object.entries(res.globalObjects.users).forEach(([key]) => {
-            if (localStorage.getItem(res.globalObjects.users[key].id_str)) {
+          for (const [key] of Object.entries(res.globalObjects.users)) {
+            if (muskists?.includes(res.globalObjects.users[key].screen_name)) {
               res.globalObjects.users[key].ext_is_blue_verified = true;
             }
-          });
+          }
           response.text = JSON.stringify(res);
         }
       } catch (e) {
@@ -139,13 +162,12 @@ xhook.after(function (request, response) {
     if (url.pathname === "/i/api/1.1/users/recommendations.json") {
       // recommended users
       try {
-        let res = JSON.parse(response.text);
-        res.forEach((item) => {
-          if (localStorage.getItem(item.user_id)) {
+        const res = JSON.parse(response.text);
+        for (const item of res) {
+          if (muskists?.includes(item.user.screen_name)) {
             item.user.ext_is_blue_verified = true;
-            // item.user.verified = true;
           }
-        });
+        }
         response.text = JSON.stringify(res);
       } catch (e) {
         console.error(`Error with ${request.url}: ${e}`);
@@ -153,26 +175,24 @@ xhook.after(function (request, response) {
     } else if (url.pathname === "/i/api/1.1/friends/following/list.json") {
       // following list
       try {
-        let res = JSON.parse(response.text);
-        res.users.forEach((user) => {
-          if (localStorage.getItem(user.id_str)) {
+        const res = JSON.parse(response.text);
+        for (const user of res.users) {
+          if (muskists?.includes(user.screen_name)) {
             user.ext_is_blue_verified = true;
-            response.text = JSON.stringify(res);
           }
-        });
+        }
       } catch (e) {
         console.error(`Error with ${request.url}: ${e}`);
       }
     } else if (url.pathname === "/i/api/1.1/search/typeahead.json") {
       // search suggestions
-
       try {
-        let res = JSON.parse(response.text);
-        Object.entries(res.users).forEach(([key]) => {
-          if (localStorage.getItem(res.users[key].id_str)) {
+        const res = JSON.parse(response.text);
+        for (const [key] of Object.entries(res.users)) {
+          if (muskists?.includes(res.users[key].screen_name)) {
             res.users[key].ext_is_blue_verified = true;
           }
-        });
+        }
         response.text = JSON.stringify(res);
       } catch (e) {
         console.error(`Error with ${request.url}: ${e}`);
@@ -180,12 +200,15 @@ xhook.after(function (request, response) {
     } else if (url.pathname === "/i/api/1.1/dm/inbox_initial_state.json") {
       // DM inbox
       try {
-        let res = JSON.parse(response.text);
-        Object.entries(res.inbox_initial_state.users).forEach(([key]) => {
-          if (localStorage.getItem(res.inbox_initial_state.users[key].id_str)) {
-            res.inbox_initial_state.users[key]._is_blue_verified = true;
+        const res = JSON.parse(response.text);
+        for (const [key] of Object.entries(res.inbox_initial_state.users)) {
+          if (
+            muskists?.includes(res.inbox_initial_state.users[key].screen_name)
+          ) {
+            res.inbox_initial_state.users[key].is_blue_verified = true;
           }
-        });
+        }
+        response.text = JSON.stringify(res);
       } catch (e) {
         console.error(`Error with ${request.url}: ${e}`);
       }

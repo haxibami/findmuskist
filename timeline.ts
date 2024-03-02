@@ -1,156 +1,172 @@
-import { isTopTabPath } from "./constant";
-import badgeCss from "data-text:~badge.css";
+import type {
+  Timeline,
+  TimelineEntry,
+  TweetResults,
+  UserResults,
+} from "./types";
 
-export const setBadgeCss = () => {
-  if (isTopTabPath.test(location.href)) {
-    let budgeEl = document.getElementById("muskist-budge");
-    if (!budgeEl) {
-      let badgeStyle = document.createElement("style");
-      badgeStyle.id = "muskist-budge";
-      badgeStyle.textContent = badgeCss;
-      let target = document.head || document.documentElement;
-      target.appendChild(badgeStyle);
-    }
+const processUserResults = (user_results: UserResults) => {
+  if (
+    user_results &&
+    Object.hasOwn(user_results, "result") &&
+    localStorage
+      .getItem("muskists")
+      ?.split(",")
+      .includes(user_results.result.legacy.screen_name)
+  ) {
+    user_results.result.is_blue_verified = true;
   }
 };
 
-const processContentItem = (item: any) => {
-  if (
-    !Object.hasOwn(item.itemContent, "tweet_results") ||
-    !Object.hasOwn(item.itemContent.tweet_results, "result")
-  ) {
+const processTweetResults = (tweet_results: TweetResults) => {
+  if (!tweet_results || !Object.hasOwn(tweet_results, "result")) {
     return;
   }
-  if (item.itemContent.tweet_results.result.__typename === "Tweet") {
-    if (!Object.hasOwn(item.itemContent.tweet_results.result, "core")) {
-      return;
+  if (tweet_results.result.__typename === "Tweet") {
+    if (Object.hasOwn(tweet_results.result, "core")) {
+      processUserResults(tweet_results.result.core.user_results);
     }
     if (
-      localStorage.getItem(
-        item.itemContent.tweet_results.result.core.user_results.result.rest_id,
-      )
+      Object.hasOwn(tweet_results.result, "quoted_status_result") &&
+      Object.hasOwn(tweet_results.result.quoted_status_result, "result")
     ) {
-      item.itemContent.tweet_results.result.core.user_results.result.is_blue_verified =
-        true;
+      processTweetResults(tweet_results.result.quoted_status_result);
     }
     if (
+      Object.hasOwn(tweet_results.result.legacy, "retweeted_status_result") &&
       Object.hasOwn(
-        item.itemContent.tweet_results.result,
-        "quoted_status_result",
-      ) &&
-      Object.hasOwn(
-        item.itemContent.tweet_results.result.quoted_status_result,
+        tweet_results.result.legacy.retweeted_status_result,
         "result",
-      ) &&
-      Object.hasOwn(
-        item.itemContent.tweet_results.result.quoted_status_result.result,
-        "core",
-      ) &&
-      localStorage.getItem(
-        item.itemContent.tweet_results.result.quoted_status_result.result.core
-          .user_results.result.rest_id,
       )
     ) {
-      item.itemContent.tweet_results.result.quoted_status_result.result.core.user_results.result.is_blue_verified =
-        true;
+      processTweetResults(tweet_results.result.legacy.retweeted_status_result);
     }
-  } else if (
-    item.itemContent.tweet_results.result.__typename ===
-    "TweetWithVisibilityResults"
-  ) {
-    if (!Object.hasOwn(item.itemContent.tweet_results.result.tweet, "core")) {
-      return;
+  } else if (tweet_results.result.__typename === "TweetWithVisibilityResults") {
+    if (Object.hasOwn(tweet_results.result.tweet, "core")) {
+      processUserResults(tweet_results.result.tweet.core.user_results);
     }
     if (
-      localStorage.getItem(
-        item.itemContent.tweet_results.result.tweet.core.user_results.result
-          .rest_id,
-      )
+      Object.hasOwn(tweet_results.result.tweet, "quoted_status_result") &&
+      Object.hasOwn(tweet_results.result.tweet.quoted_status_result, "result")
     ) {
-      item.itemContent.tweet_results.result.tweet.core.user_results.result.is_blue_verified =
-        true;
+      processTweetResults(tweet_results.result.tweet.quoted_status_result);
     }
     if (
       Object.hasOwn(
-        item.itemContent.tweet_results.result.tweet,
-        "quoted_status_result",
+        tweet_results.result.tweet.legacy,
+        "retweeted_status_result",
       ) &&
       Object.hasOwn(
-        item.itemContent.tweet_results.result.tweet.quoted_status_result.result,
-        "core",
-      ) &&
-      localStorage.getItem(
-        item.itemContent.tweet_results.result.tweet.quoted_status_result.result
-          .core.user_results.result.rest_id,
+        tweet_results.result.tweet.legacy.retweeted_status_result,
+        "result",
       )
     ) {
-      item.itemContent.tweet_results.result.tweet.quoted_status_result.result.core.user_results.result.is_blue_verified =
-        true;
+      processTweetResults(
+        tweet_results.result.tweet.legacy.retweeted_status_result,
+      );
     }
   }
 };
 
-const processUserItem = (item: any) => {
-  if (
-    !Object.hasOwn(item.itemContent, "user_results") ||
-    !Object.hasOwn(item.itemContent.user_results, "result")
-  ) {
+const processTimelineEntry = (entry: TimelineEntry) => {
+  if (!entry) {
     return;
   }
-  if (localStorage.getItem(item.itemContent.user_results.result.rest_id)) {
-    item.itemContent.user_results.result.is_blue_verified = true;
-  }
-};
+  console.log(entry.entryId);
+  // TODO: "community-to-join", "list-search-.+-list-.+"
+  const singleTweetRegex = new RegExp(
+    `^(${["tweet-", "promoted-tweet-"].join("|")})`,
+  );
+  const moduleTweetRegex = new RegExp(
+    `^(${[
+      ".+-grid-.+-tweet-",
+      "conversationthread-.+-tweet-",
+      "bookmarked-tweet-.+-tweet-",
+    ].join("|")})`,
+  );
+  const multiTweetsRegex = new RegExp(
+    `^(${[
+      "profile-conversation-",
+      "home-conversation-",
+      "list-conversation-",
+      "conversationthread-",
+      "tweetdetailrelatedtweets-",
+      ".+-grid-",
+      "bookmarked-tweet-",
+    ].join("|")})(?!-tweet-)`,
+  );
+  const singleUserRegex = new RegExp(
+    `^(${["user-", "who-to-follow-.+-user-", "who-to-subscribe-.+-user-"].join(
+      "|",
+    )})`,
+  );
+  const multiUsersRegex = new RegExp(
+    `^(${[
+      "who-to-follow-",
+      "who-to-subscribe-",
+      "singleusermodule-",
+      "similartomodule-",
+      "mergeallcandidatesmodule-",
+      "toptabsrpusermodule-",
+    ].join("|")})(?!-user-)`,
+  );
 
-const processTimelineEntry = (entry: any) => {
   if (
-    entry.entryId.startsWith("tweet-") ||
-    entry.entryId.startsWith("promoted-tweet-")
-  ) {
     // single tweet
-    processContentItem(entry.content);
-  } else if (
-    entry.entryId.startsWith("profile-conversation-") ||
-    entry.entryId.startsWith("home-conversation-") ||
-    entry.entryId.startsWith("list-conversation-") ||
-    entry.entryId.startsWith("conversationthread-") ||
-    entry.entryId.startsWith("tweetdetailrelatedtweets-")
+    singleTweetRegex.test(entry.entryId) &&
+    Object.hasOwn(entry.content.itemContent, "tweet_results")
   ) {
+    processTweetResults(entry.content.itemContent.tweet_results);
+  } else if (
+    // single grid tweet
+    moduleTweetRegex.test(entry.entryId) &&
+    Object.hasOwn(entry.item.itemContent, "tweet_results")
+  ) {
+    processTweetResults(entry.item.itemContent.tweet_results);
+  } else if (
     // conversation, thread
-    entry.content.items.forEach((item) => {
-      processContentItem(item.item);
-    });
-  } else if (entry.entryId.startsWith("user-")) {
-    // user
-    processUserItem(entry.content);
-  } else if (
-    entry.entryId.startsWith("who-to-follow-") ||
-    entry.entryId.startsWith("singleusermodule-") ||
-    entry.entryId.startsWith("similartomodule-") ||
-    entry.entryId.startsWith("mergeallcandidatesmodule-")
+    multiTweetsRegex.test(entry.entryId) &&
+    Object.hasOwn(entry.content, "items") &&
+    entry.content.items.length > 0 &&
+    Object.hasOwn(entry.content.items[0].item.itemContent, "tweet_results")
   ) {
+    for (const item of entry.content.items) {
+      processTweetResults(item.item.itemContent.tweet_results);
+    }
+  } else if (
+    // single user
+    singleUserRegex.test(entry.entryId) &&
+    Object.hasOwn(entry.content.itemContent, "user_results")
+  ) {
+    processUserResults(entry.content.itemContent.user_results);
+  } else if (
     // user list
-    entry.content.items.forEach((item) => {
-      processUserItem(item.item);
-    });
+    multiUsersRegex.test(entry.entryId) &&
+    Object.hasOwn(entry.content, "items") &&
+    entry.content.items.length > 0 &&
+    Object.hasOwn(entry.content.items[0].item.itemContent, "user_results")
+  ) {
+    for (const item of entry.content.items) {
+      processUserResults(item.item.itemContent.user_results);
+    }
+  } else {
+    console.log(`none of the above: ${entry.entryId}`);
   }
 };
 
-export const processTimeline = (timeline: any) => {
-  const pinnedIndex = timeline.instructions.findIndex(
-    (instruction) => instruction.type === "TimelinePinEntry",
-  );
-  if (pinnedIndex !== -1) {
-    processTimelineEntry(timeline.instructions[pinnedIndex].entry);
-  }
-
-  const entriesIndex = timeline.instructions.findIndex(
-    (instruction) => instruction.type === "TimelineAddEntries",
-  );
-  if (entriesIndex !== -1) {
-    timeline.instructions[entriesIndex].entries.forEach((entry: any) => {
-      processTimelineEntry(entry);
-    });
+export const processTimeline = (timeline: Timeline) => {
+  for (const instruction of timeline.instructions) {
+    if (instruction.type === "TimelinePinEntry") {
+      processTimelineEntry(instruction.entry);
+    } else if (instruction.type === "TimelineAddEntries") {
+      for (const entry of instruction.entries) {
+        processTimelineEntry(entry);
+      }
+    } else if (instruction.type === "TimelineAddToModule") {
+      for (const item of instruction.moduleItems) {
+        processTimelineEntry(item);
+      }
+    }
   }
 };
 
@@ -181,7 +197,7 @@ const getkeys = (path: string) => {
   return timelineKeys[path];
 };
 
-export const getTimeline = (res: any, path: string) => {
+export const getTimeline = (res: any, path: string): Timeline => {
   const key = getkeys(path);
   const target = key.split(".").reduce((acc, cur) => acc[cur], res);
   return target;

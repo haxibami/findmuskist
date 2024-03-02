@@ -1,7 +1,7 @@
 {
   "name": "findmuskist",
   "displayName": "Find Muskists",
-  "version": "0.1.6",
+  "version": "0.2.0",
   "description": "An extension that find hidden Muskists",
   "type": "module",
   "engines": {
@@ -29,7 +29,7 @@
   "author": "haxibami <contact@haxibami.net>",
   "license": "MIT",
   "dependencies": {
-    "plasmo": "^0.84.0",
+    "plasmo": "^0.84.2",
     "xhook": "^1.6.2"
   },
   "manifest": {
@@ -65,10 +65,10 @@
     }
   },
   "devDependencies": {
-    "@types/chrome": "^0.0.251",
-    "@types/node": "^20.9.0",
-    "@types/xhook": "^1.5.2",
-    "typescript": "^5.2.2",
-    "web-ext": "^7.8.0"
+    "@types/chrome": "^0.0.262",
+    "@types/node": "^20.11.24",
+    "@types/xhook": "^1.5.3",
+    "typescript": "^5.3.3",
+    "web-ext": "^7.11.0"
   }
 }

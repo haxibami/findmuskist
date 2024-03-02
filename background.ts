@@ -2,7 +2,7 @@ import { isTopPath, isMovingToProf } from "./constant";
 
 let prevProfUrl: string | null = null;
 
-chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && isMovingToProf.test(tab.url)) {
     if (prevProfUrl !== tab.url) {
       if (prevProfUrl) {
@@ -30,7 +30,7 @@ chrome.tabs.onUpdated.addListener(function (tabId, changeInfo, tab) {
   }
 });
 
-chrome.cookies.onChanged.addListener(async function (changeInfo) {
+chrome.cookies.onChanged.addListener(async (changeInfo) => {
   if (
     changeInfo.cookie.domain === "twitter.com" &&
     changeInfo.cookie.name === "lang"
@@ -46,7 +46,7 @@ chrome.cookies.onChanged.addListener(async function (changeInfo) {
   }
 });
 
-chrome.tabs.onUpdated.addListener(async function (tabId, changeInfo, tab) {
+chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && isMovingToProf.test(tab.url)) {
     const cookie = await chrome.cookies.get({
       url: "https://twitter.com",

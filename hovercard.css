@@ -1,0 +1,35 @@
+div[data-testid="UserName"] svg[data-testid="icon-verified"] {
+  color: red;
+}
+
+h2[role="heading"] svg[data-testid="icon-verified"] {
+  color: red;
+}
+
+div[data-testid="HoverCard"] svg[data-testid="verificationBadge"] {
+  color: red;
+}
+
+div[data-testid="HoverCard"]>div>div>span>span {
+  position: relative;
+  visibility: hidden;
+  display: inline-block;
+  width: 100%;
+}
+
+div[data-testid="HoverCard"]>div>div>span>span::after {
+  all: inherit;
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  visibility: visible;
+  display: inline;
+  content: var(--verified-hover-title);
+}
+
+div[data-testid="HoverCard"]>div>div>div:nth-child(2)>span>span:nth-child(1)::after {
+  all: inherit;
+  content: var(--verified-hover-text);
+}
