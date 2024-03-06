@@ -1,15 +1,3 @@
-div[data-testid="UserName"] svg[data-testid="icon-verified"] {
-  color: red;
-}
-
-h2[role="heading"] svg[data-testid="icon-verified"] {
-  color: red;
-}
-
-div[data-testid="HoverCard"] svg[data-testid="verificationBadge"] {
-  color: red;
-}
-
 div[data-testid="HoverCard"]>div>div>span>span {
   position: relative;
   visibility: hidden;

@@ -23,13 +23,14 @@ export const setGlobalCss = () => {
     target.appendChild(globalStyle);
   }
   const users = localStorage.getItem("muskists")?.split(",") ?? [];
-  const hrefs = users
+  const badgeQueries = users
     .map(
       (user) =>
         `a[href="/${user}"],
-          div[data-testid^="typeahead"] div:has(>div[data-testid="UserAvatar-Container-${user}"]) + div,
-          div[data-testid="Tweet-User-Avatar"]:has(div[data-testid="UserAvatar-Container-${user}"]) + div`,
+          html:has(link[href="https://twitter.com/${user}"][rel="canonical"]) :is(div[data-testid="UserName"], h2[role="heading"], div[role="group"] div[data-testid="HoverCard"]),
+          div[data-testid="Tweet-User-Avatar"]:has(div[data-testid="UserAvatar-Container-${user}"]) + div,
+          div[id^="typeaheadDropdown"] div:has(>div[data-testid="UserAvatar-Container-${user}"]) + div`,
     )
     .join(", ");
-  globalStyle.textContent = `:is(${hrefs}) svg[data-testid="icon-verified"] {color: red;}`;
+  globalStyle.textContent = `:is(${badgeQueries}) :is(svg[data-testid="icon-verified"], svg[data-testid="verificationBadge"]) {color: red;}`;
 };

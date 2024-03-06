@@ -38,26 +38,11 @@ xhook.after((request, response) => {
           !res.data.user.result.legacy.verified_type
         ) {
           if (
-            Object.hasOwn(res.data.user.result, "verification_info") &&
-            Object.hasOwn(res.data.user.result.verification_info, "reason")
-          ) {
-            if (
-              !muskists ||
-              !muskists.includes(res.data.user.result.legacy.screen_name)
-            ) {
-              localStorage.setItem(
-                "muskists",
-                `${muskistsStr ? `${muskistsStr},` : ""}${res.data.user.result.legacy.screen_name}`,
-              );
-              setGlobalCss();
-            }
-            res.data.user.result.is_blue_verified = true;
-            // res.data.user.result.legacy.verified = true;
-            // res.data.user.result.verification_info.is_identity_verified = true;
-            // res.data.user.result.has_hidden_subscriptions_on_profile = false;
-            setHovercardCss();
-            response.text = JSON.stringify(res);
-          } else if (
+            (Object.hasOwn(res.data.user.result, "verification_info") &&
+              Object.hasOwn(
+                res.data.user.result.verification_info,
+                "reason",
+              )) ||
             res.data.user.result.highlights_info.can_highlight_tweets ===
               true ||
             res.data.user.result.has_hidden_subscriptions_on_profile === true ||
@@ -74,7 +59,9 @@ xhook.after((request, response) => {
               setGlobalCss();
             }
             res.data.user.result.is_blue_verified = true;
-
+            // res.data.user.result.legacy.verified = true;
+            // res.data.user.result.verification_info.is_identity_verified = true;
+            // res.data.user.result.has_hidden_subscriptions_on_profile = false;
             setHovercardCss();
             response.text = JSON.stringify(res);
           } else {
